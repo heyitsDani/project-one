@@ -1,0 +1,84 @@
+# .github/workflows/terraform-plan.yml
+name: Terraform Apply
+run-name: ${{ github.actor }} - terraform apply 
+on: 
+    workflow_dispatch:
+jobs:
+  terraform-plan:
+    environment: development
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Create .env.json file
+        run: |
+          echo '{
+            "DIESL_ORG_DEVOPS_CLIENT_SECRET": "${{ secrets.DIESL_ORG_DEVOPS_CLIENT_SECRET }}",
+            "DIESL_ORG_DEVOPS_CLIENT_ID": "${{ secrets.DIESL_ORG_DEVOPS_CLIENT_ID }}",
+            "ACCESS_TYPE_O365": "${{ secrets.ACCESS_TYPE_O365 }}",
+            "ACCESS_URL_O365": "${{ secrets.ACCESS_URL_O365 }}",
+            "LEAVE_DRIVER_OPEN": "${{ secrets.LEAVE_DRIVER_OPEN }}",
+            "AUTH_TOKEN": "${{ secrets.AUTH_TOKEN }}",
+            "ENV_PROFILE": "${{ secrets.ENV_PROFILE }}",
+            "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
+            "OPENAI_API_VERSION": "${{ secrets.OPENAI_API_VERSION }}",
+            "OPENAI_API_BASE": "${{ secrets.OPENAI_API_BASE }}",
+            "GMAIL_USERNAME": "${{ secrets.GMAIL_USERNAME }}",
+            "GMAIL_PASSWORD": "${{ secrets.GMAIL_PASSWORD }}",
+            "JWT_SECRET_KEY": "${{ secrets.JWT_SECRET_KEY }}",
+            "POSTGRESQL_CONNECTION_URL_LOCAL": "${{ secrets.POSTGRESQL_CONNECTION_URL_LOCAL }}",
+            "POSTGRESQL_CONNECTION_URL_DEV": "${{ secrets.POSTGRESQL_CONNECTION_URL_DEV }}",
+            "POSTGRESQL_USERNAME": "${{ secrets.POSTGRESQL_USERNAME }}",
+            "POSTGRESQL_PASSWORD_LOCAL": "${{ secrets.POSTGRESQL_PASSWORD_LOCAL }}",
+            "POSTGRESQL_PASSWORD_DEV": "${{ secrets.POSTGRESQL_PASSWORD_DEV }}",
+            "NEXT_PUBLIC_RECAPTCHA_SITE_KEY": "${{ secrets.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}",
+            "RECAPTCHA_SECRET_KEY": "${{ secrets.RECAPTCHA_SECRET_KEY }}",
+            "NEXT_PUBLIC_BACKEND_DOMAIN_NAME": "${{ secrets.NEXT_PUBLIC_BACKEND_DOMAIN_NAME }}",
+            "NEXT_PUBLIC_BACKEND_API_VERSION": "${{ secrets.NEXT_PUBLIC_BACKEND_API_VERSION }}",
+            "AZURE_APP_REGISTRATION_NAME": "${{ secrets.AZURE_APP_REGISTRATION_NAME }}",
+            "NEXT_PUBLIC_IS_DEVELOP": "${{ secrets.NEXT_PUBLIC_IS_DEVELOP }}",
+            "NEXT_PUBLIC_IS_CONTAINERIZED": "${{ secrets.NEXT_PUBLIC_IS_CONTAINERIZED }}",
+            "ACR_USERNAME": "${{ secrets.ACR_USERNAME }}",
+            "ACR_PASSWORD": "${{ secrets.ACR_PASSWORD }}",
+            "ACR_SERVER": "${{ secrets.ACR_SERVER }}",
+            "ACR_URL": "${{ secrets.ACR_URL }}",
+            "DIESL_AI_IMAGE": "${{ secrets.DIESL_AI_IMAGE }}",
+            "DIESL_FRONTEND_IMAGE": "${{ secrets.DIESL_FRONTEND_IMAGE }}",
+            "DIESL_BACKEND_IMAGE": "${{ secrets.DIESL_BACKEND_IMAGE }}",
+            "AZ_KV_URL": "${{ secrets.AZ_KV_URL }}",
+            "AZ_TENANT_ID": "${{ secrets.AZ_TENANT_ID }}",
+            "CONNECTION_STRING": "${{ secrets.CONNECTION_STRING }}",
+            "DIESL_AI_BEARER_TOKEN": "${{ secrets.DIESL_AI_BEARER_TOKEN }}",
+            "DIESL_AI_HOST": "${{ secrets.DIESL_AI_HOST }}",
+            "DIESL_BACKEND_HOST": "${{ secrets.DIESL_BACKEND_HOST }}",
+            "DIESL_TF_AGENTS": "${{ secrets.DIESL_TF_AGENTS }}",
+            "SAS_TOKEN": "${{ secrets.SAS_TOKEN }}",
+            "SMTP_PASSWORD": "${{ secrets.SMTP_PASSWORD }}",
+            "TENANT_ID": "${{ secrets.TENANT_ID }}",
+            "SUBSCRIPTION_ID": "${{ secrets.SUBSCRIPTION_ID }}",
+            "AZ_CLIENT_ID": "${{ secrets.AZ_CLIENT_ID }}",
+            "AZ_CLIENT_SECRET": "${{ secrets.AZ_CLIENT_SECRET }}",
+            "RESOURCE_GROUP_NAME": "${{ secrets.RESOURCE_GROUP_NAME }}",
+            "STORAGE_ACCOUNT_NAME": "${{ secrets.STORAGE_ACCOUNT_NAME }}",
+            "CONTAINER_NAME": "${{ secrets.CONTAINER_NAME }}",
+            "KEY": "${{ secrets.KEY }}",
+            "ACCESS_KEY": "${{ secrets.ACCESS_KEY }}"
+          }' > .env
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.1
+
+      - name: Login to Azure
+        run: |
+            az login --service-principal --username ${{secrets.AZ_CLIENT_ID}} --password ${{secrets.DIESL_TF_AGENTS}} --tenant ${{secrets.AZ_TENANT_ID}} --allow-no-subscriptions
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform apply -auto-approve -var-file environments/dev.tfvars.json
